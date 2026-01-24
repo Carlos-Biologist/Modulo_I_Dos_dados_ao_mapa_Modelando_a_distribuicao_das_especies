@@ -149,10 +149,15 @@ sp_thin_guara <- thin(
   write.log.file = FALSE                        # Não cria arquivo de log
 )
 
-sp_thin_guara <- sp_thin_guara[[3]]                             # Seleciona a repetição
-colnames(sp_thin_guara) <- c("longitude", "latitude")           # Renomeia colunas
+n_locs <- sapply(sp_thin_guara, nrow)                           # Número de pontos em cada repetição
+n_locs
+
+sp_thin_guara <- sp_thin_guara[[which.max(n_locs)]]             # Repetição com maior número de ocorrências
+sp_thin_guara
+
 nrow(sp_thin_guara)                                             # Mostra número de registros
-sp_thin_guara                                                   # Visualiza tabela final
+
+colnames(sp_thin_guara) <- c("longitude", "latitude")           # Renomeia colunas
 
 # ---------------------------------------------------------------------------- #
 
@@ -166,7 +171,7 @@ g2_guara <- ggplot() +
              color = "red", size = 2) +
   coord_fixed(1.3) +
   labs(
-    title = "Ocorrências de Chrysocyon flavescens na América Latina (Espacializado)",
+    title = "Ocorrências de Chrysocyon brachyurus na América Latina (Espacializado)",
     x = "Longitude", y = "Latitude"
   ) +
   theme_minimal()
@@ -185,7 +190,7 @@ g1_guara + g2_guara
 bio_guara <- geodata::worldclim_global(
   var = "bio",     # Variáveis bioclimáticas (BIO1 a BIO19)
   res = 5,         # Resolução espacial (5 minutos de arco)
-  path = "C:/Users/carlosoliveira/Documents/Backup/Cursos/Modelagem Preditiva/Modelagem/2° Turma/variaveis_guara/" # Onde salvar
+  path = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies" # Onde salvar
 )
 
 #https://www.worldclim.org/data/bioclim.html
@@ -194,7 +199,7 @@ bio_guara <- geodata::worldclim_global(
 
 bio_guara <- raster::stack(
   list.files(
-    path = "C:/Users/carlosoliveira/Documents/Backup/Cursos/Modelagem Preditiva/Modelagem/1° Turma/variaveis_guara/climate/wc2.1_5m",
+    path = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/climate/wc2.1_5m",
     pattern = ".tif", full.names = TRUE
   )
 )
@@ -206,7 +211,7 @@ names(bio_guara)                                                             # L
 
 #br <- geobr::read_country(year = 2020)     # Baixa shapefile do Brasil (SIRGAS 2000)
 #bio <- projectRaster(bio, crs = crs(br))   # Reprojeta para o mesmo CRS do shapefile
-#bio <- crop(bio_guara, br)                       # Recorta para área do Brasil
+#bio <- crop(bio_guara, br)                 # Recorta para área do Brasil
 #bio <- mask(bio, br)                       # Remove valores fora do Brasil
 #plot(bio[[1]])                             # Mostra mapa de uma variável
 
@@ -239,6 +244,7 @@ bio_guara <- crop(bio_guara, latam_guara)
 bio <- mask(bio_guara, latam_guara)
 
 # Visualiza a primeira variável
+plot(bio_guara)
 plot(bio_guara[[1]])
 plot(bio_guara[[12]])
 
@@ -248,6 +254,7 @@ plot(bio_guara[[12]])
 guara <- raster::extract(bio_guara, sp_thin_guara)           # Extrai valores ambientais para cada ocorrência
 guara_vif <- usdm::vifstep(guara, th = 10)                   # Verifica multicolinearidade (VIF)
 guara_vif
+
 bio_guara <- usdm::exclude(bio_guara, guara_vif)             # Remove variáveis correlacionadas
 plot(bio_guara)                                              # Plota variáveis selecionadas
 
@@ -257,10 +264,6 @@ points(sp_thin_guara, col = "black")                         # Sobrepõe pontos 
 # ---------------------------------------------------------------------------- #
 
 bio_guara <- raster::stack(bio_guara) # Converte para RasterStack
-
-# ---------------------------------------------------------------------------- #
-
-rm(list = setdiff(ls(), c("bio_guara", "latam_guara", "br", "sp_thin_guara", "pal", "pal1"))) # Limpa objetos não usados
 
 # ---------------------------------------------------------------------------- #
 
@@ -283,7 +286,7 @@ mdata_guara <- sdmData(
   train = sp_thin_guara,     # Dados de treino
   predictors = bio_guara,    # Variáveis ambientais
   bg = list(
-    n = 127,                # Número de pontos de background (pseudo ausência)
+    n = 135,                 # Número de pontos de background (pseudo ausência)
     method = "gRandom",      # Distribuição aleatória
     remove = TRUE            # Remove pontos de fundo sobrepostos a presenças
   )
@@ -291,11 +294,15 @@ mdata_guara <- sdmData(
 
 # ---------------------------------------------------------------------------- #
 
+install.packages(c("gbm", "kernlab", "randomForest", "dismo", "mgcv"))
+
+getMethodNames()
+
 # Rodando múltiplos algoritmos
 modelo_multi_guara <- sdm(
   formula = guara ~ .,
   data = mdata_guara,
-  methods = c("Maxent", "RF", "GLM"),
+  methods=c('glm','gam','gbm','svm','rf', "maxent"),
   replication = "cv",   # validação cruzada
   cv.folds = 5,         # número de folds
   test.percent = 30,
