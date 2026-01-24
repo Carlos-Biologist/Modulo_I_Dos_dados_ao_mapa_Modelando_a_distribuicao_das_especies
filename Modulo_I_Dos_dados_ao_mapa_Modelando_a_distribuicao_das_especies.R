@@ -265,6 +265,8 @@ points(sp_thin_guara, col = "black")                         # Sobrepõe pontos 
 
 bio_guara <- raster::stack(bio_guara) # Converte para RasterStack
 
+anyNA(bio_guara)                      # Verificar se existem NAs no RasterStack
+
 # ---------------------------------------------------------------------------- #
 
 # Ajustar e treinar modelos de adequabilidade -----
@@ -279,6 +281,7 @@ sp_thin_guara
 
 # ---------------------------------------------------------------------------- #
 
+install.packages("sdm")
 library(sdm)
 
 mdata_guara <- sdmData(
@@ -294,15 +297,11 @@ mdata_guara <- sdmData(
 
 # ---------------------------------------------------------------------------- #
 
-install.packages(c("gbm", "kernlab", "randomForest", "dismo", "mgcv"))
-
-getMethodNames()
-
 # Rodando múltiplos algoritmos
 modelo_multi_guara <- sdm(
   formula = guara ~ .,
   data = mdata_guara,
-  methods=c('glm','gam','gbm','svm','rf', "maxent"),
+  methods=c('glm','gam','gbm','svm','rf'),
   replication = "cv",   # validação cruzada
   cv.folds = 5,         # número de folds
   test.percent = 30,
@@ -312,7 +311,9 @@ modelo_multi_guara <- sdm(
 # ---------------------------------------------------------------------------- #
 
 modelo_multi_guara              # Mostra sumário do modelo
+
 roc(modelo_multi_guara)         # Calcula curva ROC/AUC
+
 getVarImp(modelo_multi_guara)   # Importância das variáveis
 
 # Curvas de resposta para duas variáveis específicas
@@ -324,12 +325,12 @@ rcurve(modelo_multi_guara, gg = TRUE)
 proj_multi_guara <- raster::predict(
   bio_guara,
   modelo_multi_guara,           # Modelo treinado
-  filename = "C:/Users/carlosoliveira/Documents/Backup/Cursos/Modelagem Preditiva/Modelagem/2° Turma/proj_guara_multi.grd",
+  filename = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/proj_guara_multi.grd",
   overwrite = TRUE  # Sobrescreve se existir
 )
 
 plot(proj_multi_guara, zlim = c(0, 1), col=pal1)
-points(sp_thin_guara, col = "black")
+#points(sp_thin_guara, col = "black")
 
 # ---------------------------------------------------------------------------- #
 
@@ -351,15 +352,13 @@ par(mfrow = c(1, 2))
 
 # 1º gráfico: projeção
 plot(proj_multi_guara, zlim = c(0, 1), col=pal1)
-#points(sp_thin_guara, col = "black")
 
 # 2º gráfico: ensemble
 plot(ens_multi_guara, zlim = c(0, 1), col=pal1)
-#points(sp_thin_guara, col = "black")
 
 # ---------------------------------------------------------------------------- #
 
-dir.create("C:/Users/carlosoliveira/Documents/Backup/Cursos/Modelagem Preditiva/Modelagem/2° Turma/variaveis_fut_guara", recursive = TRUE)
+dir.create("C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara", recursive = TRUE)
 
 bio_future_guara <- geodata::cmip6_world(
   model = "MPI-ESM1-2-HR",
@@ -367,7 +366,7 @@ bio_future_guara <- geodata::cmip6_world(
   time  = "2081-2100",
   var   = "bioc",
   res   = 5,
-  path  = "C:/Users/carlosoliveira/Documents/Backup/Cursos/Modelagem Preditiva/Modelagem/2° Turma/variaveis_fut_guara"
+  path  = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara"
 )
 
 # ---------------------------------------------------------------------------- #
@@ -416,22 +415,15 @@ ens_future_guara <- ensemble(
 )
 
 # Dividir a tela em 2 colunas e 1 linha
-par(mfrow = c(1, 3))
-
-# gráfico: projetado sem ensemble
-plot(proj_multi_guara, zlim = c(0, 1), col = pal1,
-     main = "Projetado sem ensemble")
-#points(sp_thin, col = "red")
+par(mfrow = c(1, 2))
 
 # gráfico: projetado com ensemble
 plot(ens_multi_guara, zlim = c(0, 1), col = pal1,
      main = "Projetado com ensemble")
-#points(sp_thin, col = "red")
 
 # gráfico: projetado no futuro
 plot(ens_future_guara, zlim = c(0, 1), col = pal1,
      main = "Projetado no futuro\n(RCP8.5 - 2080/2100)")
-#points(sp_thin, col = "red")
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
