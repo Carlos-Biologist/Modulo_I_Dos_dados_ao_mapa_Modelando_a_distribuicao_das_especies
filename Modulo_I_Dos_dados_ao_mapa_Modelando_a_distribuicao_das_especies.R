@@ -23,11 +23,11 @@ options(scipen = 999) # remover notação científica dos dados
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-install.packages("spThin")
-install.packages("raster")
-install.packages("tidyverse")
-install.packages("dplyr")
-install.packages("dismo")
+#install.packages("spThin")
+#install.packages("raster")
+#install.packages("tidyverse")
+#install.packages("dplyr")
+#install.packages("dismo")
 
 library(spThin)    # Realiza o "thinning" espacial, reduzindo a autocorrelação espacial em dados de ocorrência
 library(raster)    # Manipulação, análise e visualização de dados espaciais no formato raster
@@ -273,6 +273,8 @@ anyNA(bio_guara)                      # Verificar se existem NAs no RasterStack
 sp_thin_guara <- sp_thin_guara %>% mutate(guara = 1)                 # Adiciona coluna binária de presença
 coordinates(sp_thin_guara) <- c("longitude", "latitude")             # Converte para objeto espacial
 
+str(sp_thin_guara)
+
 # Cria um SpatialPointsDataFrame
 sp_thin_guara <- SpatialPointsDataFrame(sp_thin_guara, 
                                         data = data.frame(guara = rep(1, nrow(sp_thin_guara))))
@@ -281,7 +283,7 @@ sp_thin_guara
 
 # ---------------------------------------------------------------------------- #
 
-install.packages("sdm")
+#install.packages("sdm")
 library(sdm)
 
 mdata_guara <- sdmData(
@@ -330,7 +332,6 @@ proj_multi_guara <- raster::predict(
 )
 
 plot(proj_multi_guara, zlim = c(0, 1), col=pal1)
-#points(sp_thin_guara, col = "black")
 
 # ---------------------------------------------------------------------------- #
 
@@ -424,6 +425,107 @@ plot(ens_multi_guara, zlim = c(0, 1), col = pal1,
 # gráfico: projetado no futuro
 plot(ens_future_guara, zlim = c(0, 1), col = pal1,
      main = "Projetado no futuro\n(RCP8.5 - 2080/2100)")
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+# Calculando a perda de adequabilidade atual x futuro
+
+# Raster atual
+n_atual_0.9_1.0 <- cellStats(
+  ens_multi_guara >= 0.9 & ens_future_guara <= 1.0,
+  stat = 'sum'
+)
+
+# Raster futuro
+n_futuro_0.9_1.0 <- cellStats(
+  ens_future_guara >= 0.9 & ens_future_guara <= 1.0,
+  stat = 'sum'
+)
+
+n_atual_0.9_1.0
+n_futuro_0.9_1.0
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+# Raster atual
+n_atual_0.7_0.9 <- cellStats(
+  ens_multi_guara > 0.7 & ens_multi_guara <= 0.9,
+  stat = 'sum'
+)
+
+# Raster futuro
+n_futuro_0.7_0.9 <- cellStats(
+  ens_future_guara > 0.7 & ens_future_guara <= 0.9,
+  stat = 'sum'
+)
+
+n_atual_0.7_0.9
+n_futuro_0.7_0.9
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+# resolução em graus
+res_grau <- 0.05
+
+# conversão grau -> km
+km_por_grau <- 111
+pixel_km2 <- (res_grau * km_por_grau)^2
+
+pixel_km2
+
+area_atual_km2  <- n_atual_0.7_0.9  * pixel_km2
+area_futuro_km2 <- n_futuro_0.7_0.9 * pixel_km2
+area_perda_km2  <- area_atual_km2 - area_futuro_km2
+
+area_atual_km2
+area_futuro_km2
+area_perda_km2
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+perda_percentual_0.7_0.9 <- area_perda_km2 / area_atual_km2 * 100
+perda_percentual_0.7_0.9
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+df_plot_km2 <- data.frame(
+  Cenário = factor(c("Presente", "Futuro"),
+                   levels = c("Presente", "Futuro")),
+  Area_km2 = c(area_atual_km2, area_futuro_km2)
+)
+
+
+ggplot(df_plot_km2, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = format(round(Area_km2, 0), big.mark = ".", scientific = FALSE)),
+    vjust = -0.5,
+    size = 6
+  ) +
+  scale_fill_manual(values = c("blue", "red")) +
+  labs(
+    title = "Perda de áreas adequadas (0.7–0.9)",
+    subtitle = paste0(
+      "Redução de ", round(perda_percentual_0.7_0.9, 1), "% no cenário futuro"
+    ),
+    y = expression("Área (km"^2*")"),
+    x = NULL
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 20, face = "bold"),
+    plot.subtitle = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14)
+  ) +
+  ylim(0, max(df_plot_km2$Area_km2) * 1.25)
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
