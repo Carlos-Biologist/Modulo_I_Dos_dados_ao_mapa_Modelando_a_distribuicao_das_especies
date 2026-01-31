@@ -22,10 +22,10 @@
 #install.packages("spThin")
 #install.packages("raster")
 #install.packages("tidyverse")
-install.packages("dplyr")
-install.packages("dismo")
+#install.packages("dplyr")
+#install.packages("dismo")
 
-library(dismo)
+library(dismo)     # Ferramentas para Modelagem de Distribuição de Espécies (SDM)
 library(spThin)    # Realiza o "thinning" espacial, reduzindo a autocorrelação espacial em dados de ocorrência
 library(raster)    # Manipulação, análise e visualização de dados espaciais no formato raster
 library(tidyverse) # Conjunto de pacotes para manipulação, visualização e análise de dados (ggplot2, dplyr, tidyr, etc.)
@@ -286,6 +286,13 @@ sp_thin_guara
 #install.packages("sdm")
 library(sdm)
 
+# Framework unificado para Modelagem de Distribuição de Espécies (SDM):
+# • Integra múltiplos algoritmos (GLM, GAM, RF, SVM, MaxEnt, BRT, etc.)
+# • Permite validação cruzada e bootstraps
+# • Combina modelos em ensemble
+# • Avalia desempenho (AUC, TSS, Kappa)
+# • Facilita projeções espaciais atuais e futuras
+
 #https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.01881
 
 mdata_guara <- sdmData(
@@ -338,13 +345,13 @@ plot(proj_multi_guara, zlim = c(0, 1), col=pal1)
 # ---------------------------------------------------------------------------- #
 
 ## Ensemble -----
-ens_multi_guara <- ensemble(
-  modelo_multi_guara,
-  newdata = bio_guara,
-  setting = list(
-    method = "weighted",
-    stat = "AUC",
-    opt = 2
+ens_multi_guara <- ensemble(                  # Cria um modelo ensemble a partir de vários algoritmos
+  modelo_multi_guara,                         # Objeto sdm com os modelos ajustados (GLM, RF, SVM, etc.)
+  newdata = bio_guara,                        # Variáveis ambientais usadas para projetar o ensemble no espaço
+  setting = list(                             # Define como os modelos serão combinados no ensemble
+    method = "weighted",                      # Combinação ponderada dos modelos
+    stat = "AUC",                             # Métrica usada para calcular os pesos (AUC)
+    opt = 2                                   # Usa apenas modelos com desempenho acima do critério definido
   )
 )
 
@@ -363,13 +370,14 @@ plot(ens_multi_guara, zlim = c(0, 1), col=pal1)
 
 dir.create("C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara", recursive = TRUE)
 
-bio_future_guara <- geodata::cmip6_world(
-  model = "MPI-ESM1-2-HR",
-  ssp   = "585",             # SSP5-8.5
-  time  = "2081-2100",
-  var   = "bioc",
-  res   = 5,
+bio_future_guara <- geodata::cmip6_world(     # Baixa e prepara variáveis climáticas globais do CMIP6
+  model = "MPI-ESM1-2-HR",                    # Modelo climático global (GCM) utilizado
+  ssp   = "585",                              # Cenário de emissões SSP5-8.5 (altas emissões)
+  time  = "2081-2100",                        # Período futuro considerado (final do século XXI)
+  var   = "bioc",                             # Variáveis bioclimáticas (BIO1–BIO19)
+  res   = 5,                                  # Resolução espacial (~5 km)
   path  = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara"
+  # Diretório onde os arquivos serão salvos
 )
 
 # ---------------------------------------------------------------------------- #
