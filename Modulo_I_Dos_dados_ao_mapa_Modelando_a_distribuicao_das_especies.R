@@ -17,22 +17,25 @@
 # - as pastas de origem e destino dos arquivos devem ser atualizadas           #
 # conforme o computador onde serão realizados os processos de modelagem.       #
 # ---------------------------------------------------------------------------- #
-
-options(scipen = 999) # remover notação científica dos dados
-
-# ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
 #install.packages("spThin")
 #install.packages("raster")
 #install.packages("tidyverse")
-#install.packages("dplyr")
-#install.packages("dismo")
+install.packages("dplyr")
+install.packages("dismo")
 
+library(dismo)
 library(spThin)    # Realiza o "thinning" espacial, reduzindo a autocorrelação espacial em dados de ocorrência
 library(raster)    # Manipulação, análise e visualização de dados espaciais no formato raster
 library(tidyverse) # Conjunto de pacotes para manipulação, visualização e análise de dados (ggplot2, dplyr, tidyr, etc.)
 library(dplyr)     # Manipulação de dados (selecionar colunas, filtrar linhas, criar variáveis, agrupar, sumarizar)
+
+# ---------------------------------------------------------------------------- #
+
+options(scipen = 999) # remover notação científica dos dados
+
+# ---------------------------------------------------------------------------- #
 
 pal1 <- c("#3E49BB", "#3498DB", "yellow", "orange", "red", "darkred") # paleta de cores
 
@@ -42,7 +45,7 @@ pal1 <- c("#3E49BB", "#3498DB", "yellow", "orange", "red", "darkred") # paleta d
 
 ## Download ou carregamento das ocorrências -----
 sp_guara <- dismo::gbif(
-  genus = "Chrysocyon",         # Define o gênero da espécie a buscar no GBIF
+  genus = "Chrysocyon",           # Define o gênero da espécie a buscar no GBIF
   species = "brachyurus",         # Define a espécie
   geo = TRUE,                     # Filtra apenas registros com coordenadas (lat/long)
   removeZeros = TRUE,             # Remove registros com coordenadas inválidas
@@ -97,7 +100,7 @@ library(maps)     # Pacote para mapas simples
 #             color = "red", size = 2) +               # Plota pontos de ocorrência
 #  coord_fixed(1.3) +                                  # Mantém proporção correta
 #  labs(
-#    title = "Ocorrências de Chrysocyon brachyurus no Brasil", # Título
+#    title = "Ocorrências de Chrysocyon brachyurus", # Título
 #    x = "Longitude", y = "Latitude"                             # Rótulos dos eixos
 #  ) +
 #  theme_minimal()                                     # Tema visual simples
@@ -150,7 +153,6 @@ sp_thin_guara <- thin(
 )
 
 n_locs <- sapply(sp_thin_guara, nrow)                           # Número de pontos em cada repetição
-n_locs
 
 sp_thin_guara <- sp_thin_guara[[which.max(n_locs)]]             # Repetição com maior número de ocorrências
 sp_thin_guara
@@ -273,8 +275,6 @@ anyNA(bio_guara)                      # Verificar se existem NAs no RasterStack
 sp_thin_guara <- sp_thin_guara %>% mutate(guara = 1)                 # Adiciona coluna binária de presença
 coordinates(sp_thin_guara) <- c("longitude", "latitude")             # Converte para objeto espacial
 
-str(sp_thin_guara)
-
 # Cria um SpatialPointsDataFrame
 sp_thin_guara <- SpatialPointsDataFrame(sp_thin_guara, 
                                         data = data.frame(guara = rep(1, nrow(sp_thin_guara))))
@@ -285,6 +285,8 @@ sp_thin_guara
 
 #install.packages("sdm")
 library(sdm)
+
+#https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.01881
 
 mdata_guara <- sdmData(
   formula = guara ~ .,       # Modelo: presença ~ variáveis ambientais
@@ -476,31 +478,90 @@ pixel_km2 <- (res_grau * km_por_grau)^2
 
 pixel_km2
 
-area_atual_km2  <- n_atual_0.7_0.9  * pixel_km2
-area_futuro_km2 <- n_futuro_0.7_0.9 * pixel_km2
-area_perda_km2  <- area_atual_km2 - area_futuro_km2
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
 
-area_atual_km2
-area_futuro_km2
-area_perda_km2
+area_atual_km2_0.9_1.0  <- n_atual_0.9_1.0  * pixel_km2
+area_futuro_km2_0.9_1.0 <- n_futuro_0.9_1.0 * pixel_km2
+area_perda_km2_0.9_1.0  <- area_atual_km2_0.9_1.0 - area_futuro_km2_0.9_1.0
+
+area_atual_km2_0.9_1.0
+area_futuro_km2_0.9_1.0
+area_perda_km2_0.9_1.0
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-perda_percentual_0.7_0.9 <- area_perda_km2 / area_atual_km2 * 100
+perda_percentual_0.9_1.0 <- area_perda_km2_0.9_1.0 / area_atual_km2_0.9_1.0 * 100
+perda_percentual_0.9_1.0
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+df_plot_km2_0.9_1.0 <- data.frame(
+  Cenário = factor(c("Presente", "Futuro"),
+                   levels = c("Presente", "Futuro")),
+  Area_km2 = c(area_atual_km2_0.9_1.0, area_futuro_km2_0.9_1.0)
+)
+
+
+p1 <- ggplot(df_plot_km2_0.9_1.0, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = format(round(Area_km2, 0), big.mark = ".", scientific = FALSE)),
+    vjust = -0.5,
+    size = 6
+  ) +
+  scale_fill_manual(values = c("blue", "red")) +
+  labs(
+    title = "Perda de áreas adequadas (0.9–1.0)",
+    subtitle = paste0(
+      "Redução de ", round(perda_percentual_0.9_1.0, 1), "% no cenário futuro"
+    ),
+    y = expression("Área (km"^2*")"),
+    x = NULL
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 20, face = "bold"),
+    plot.subtitle = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14)
+  ) +
+  ylim(0, max(df_plot_km2_0.9_1.0$Area_km2) * 1.25)
+
+p1
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+area_atual_km2_0.7_0.9  <- n_atual_0.7_0.9  * pixel_km2
+area_futuro_km2_0.7_0.9 <- n_futuro_0.7_0.9 * pixel_km2
+area_perda_km2_0.7_0.9  <- area_atual_km2_0.7_0.9 - area_futuro_km2_0.7_0.9
+
+area_atual_km2_0.7_0.9
+area_futuro_km2_0.7_0.9
+area_perda_km2_0.7_0.9
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+perda_percentual_0.7_0.9 <- area_perda_km2_0.7_0.9 / area_atual_km2_0.7_0.9 * 100
 perda_percentual_0.7_0.9
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-df_plot_km2 <- data.frame(
+df_plot_km2_0.7_0.9 <- data.frame(
   Cenário = factor(c("Presente", "Futuro"),
                    levels = c("Presente", "Futuro")),
-  Area_km2 = c(area_atual_km2, area_futuro_km2)
+  Area_km2 = c(area_atual_km2_0.7_0.9, area_futuro_km2_0.7_0.9)
 )
 
 
-ggplot(df_plot_km2, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
+p2 <- ggplot(df_plot_km2_0.7_0.9, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
   geom_col(width = 0.6) +
   geom_text(
     aes(label = format(round(Area_km2, 0), big.mark = ".", scientific = FALSE)),
@@ -525,7 +586,12 @@ ggplot(df_plot_km2, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14)
   ) +
-  ylim(0, max(df_plot_km2$Area_km2) * 1.25)
+  ylim(0, max(df_plot_km2_0.7_0.9$Area_km2) * 1.25)
+
+p2
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
+
+# Plotar lado a lado
+p1 | p2
