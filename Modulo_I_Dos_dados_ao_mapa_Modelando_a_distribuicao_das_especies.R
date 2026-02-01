@@ -3,7 +3,7 @@
 # das espécies                                                                 #
 #                                                                              #
 # Criado por: Dr. Carlos de Oliveira                                           #
-# Data: 24-01-2026                                                             #
+# Data: 01-02-2026                                                             #
 # Contato: carlos.prof.bio@gmail.com                                           #
 #                                                                              #
 # Descrição: o script representa o processo geral de implementação de          #
@@ -19,11 +19,15 @@
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
+# Instalar os pacotes
+
 #install.packages("spThin")
 #install.packages("raster")
 #install.packages("tidyverse")
 #install.packages("dplyr")
 #install.packages("dismo")
+
+# Carregar os pacotes
 
 library(dismo)     # Ferramentas para Modelagem de Distribuição de Espécies (SDM)
 library(spThin)    # Realiza o "thinning" espacial, reduzindo a autocorrelação espacial em dados de ocorrência
@@ -54,12 +58,12 @@ sp_guara <- dismo::gbif(
 
 # ---------------------------------------------------------------------------- #
 
-# sp_guara <- read.csv("nome do arquivo.csv")             # Alternativa: ler ocorrências de um arquivo CSV
-# sp_guara <- readxl::read_excel("nome do arquivo.xlsx")  # Alternativa: ler ocorrências de um Excel
+#sp_guara <- read.csv("nome do arquivo.csv")             # Alternativa: ler ocorrências de um arquivo CSV
+#sp_guara <- readxl::read_excel("nome do arquivo.xlsx")  # Alternativa: ler ocorrências de um Excel
 
 # ---------------------------------------------------------------------------- #
 
-names(sp_guara)    # Mostra os nomes das colunas do objeto 'sp'
+names(sp_guara)    # Mostra os nomes das colunas do objeto 'sp_guara'
 sp_guara$country   # Exibe todos os dados baixados
 nrow(sp_guara)     # Conta o número de linhas (registros) no dataframe
 
@@ -133,7 +137,7 @@ g1_guara
 
 # ---------------------------------------------------------------------------- #
 
-# Remove os dois pontos indesejados
+# Remove o ponto indesejados
 sp_guara_al <- sp_guara_al %>%
   filter(!(lon == -46.7837246 & lat == -30.5171954))
 
@@ -300,7 +304,7 @@ mdata_guara <- sdmData(
   train = sp_thin_guara,     # Dados de treino
   predictors = bio_guara,    # Variáveis ambientais
   bg = list(
-    n = 135,                 # Número de pontos de background (pseudo ausência)
+    n = 134,                 # Número de pontos de background (pseudo ausência)
     method = "gRandom",      # Distribuição aleatória
     remove = TRUE            # Remove pontos de fundo sobrepostos a presenças
   )
@@ -434,7 +438,7 @@ plot(ens_multi_guara, zlim = c(0, 1), col = pal1,
 
 # gráfico: projetado no futuro
 plot(ens_future_guara, zlim = c(0, 1), col = pal1,
-     main = "Projetado no futuro\n(RCP8.5 - 2080/2100)")
+     main = "Projetado no futuro\n(SSP585 - 2080/2100)")
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
@@ -506,45 +510,6 @@ perda_percentual_0.9_1.0
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-df_plot_km2_0.9_1.0 <- data.frame(
-  Cenário = factor(c("Presente", "Futuro"),
-                   levels = c("Presente", "Futuro")),
-  Area_km2 = c(area_atual_km2_0.9_1.0, area_futuro_km2_0.9_1.0)
-)
-
-
-p1 <- ggplot(df_plot_km2_0.9_1.0, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
-  geom_col(width = 0.6) +
-  geom_text(
-    aes(label = format(round(Area_km2, 0), big.mark = ".", scientific = FALSE)),
-    vjust = -0.5,
-    size = 6
-  ) +
-  scale_fill_manual(values = c("blue", "red")) +
-  labs(
-    title = "Perda de áreas adequadas (0.9–1.0)",
-    subtitle = paste0(
-      "Redução de ", round(perda_percentual_0.9_1.0, 1), "% no cenário futuro"
-    ),
-    y = expression("Área (km"^2*")"),
-    x = NULL
-  ) +
-  theme_minimal(base_size = 16) +
-  theme(
-    legend.position = "none",
-    plot.title = element_text(size = 20, face = "bold"),
-    plot.subtitle = element_text(size = 16),
-    axis.title.y = element_text(size = 16),
-    axis.text.x = element_text(size = 14),
-    axis.text.y = element_text(size = 14)
-  ) +
-  ylim(0, max(df_plot_km2_0.9_1.0$Area_km2) * 1.25)
-
-p1
-
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-
 area_atual_km2_0.7_0.9  <- n_atual_0.7_0.9  * pixel_km2
 area_futuro_km2_0.7_0.9 <- n_futuro_0.7_0.9 * pixel_km2
 area_perda_km2_0.7_0.9  <- area_atual_km2_0.7_0.9 - area_futuro_km2_0.7_0.9
@@ -598,8 +563,4 @@ p2 <- ggplot(df_plot_km2_0.7_0.9, aes(x = Cenário, y = Area_km2, fill = Cenári
 
 p2
 
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
 
-# Plotar lado a lado
-p1 | p2
