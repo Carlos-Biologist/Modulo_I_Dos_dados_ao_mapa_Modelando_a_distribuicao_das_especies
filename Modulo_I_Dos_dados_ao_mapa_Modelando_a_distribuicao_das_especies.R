@@ -194,7 +194,7 @@ g1_guara + g2_guara
 
 ## Download ou carregamento das variáveis ambientais -----
 bio_guara <- geodata::worldclim_global(
-  var = "bio",     # Variáveis bioclimáticas (BIO1 a BIO19)
+  var = "bio",       # Variáveis bioclimáticas (BIO1 a BIO19)
     res = 5,         # Resolução espacial (5 minutos de arco)
   path = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies" # Onde salvar
 )
@@ -301,8 +301,8 @@ library(sdm)
 
 mdata_guara <- sdmData(
   formula = guara ~ .,       # Modelo: presença ~ variáveis ambientais
-  train = sp_thin_guara,     # Dados de treino
-  predictors = bio_guara,    # Variáveis ambientais
+  train = sp_thin_guara,     # Dados de ocorrência mais coordenadas
+  predictors = bio_guara,    # Camadas ambientais
   bg = list(
     n = 134,                 # Número de pontos de background (pseudo ausência)
     method = "gRandom",      # Distribuição aleatória
@@ -434,7 +434,7 @@ par(mfrow = c(1, 2))
 
 # gráfico: projetado com ensemble
 plot(ens_multi_guara, zlim = c(0, 1), col = pal1,
-     main = "Projetado com ensemble")
+     main = "Projetado atual com ensemble")
 
 # gráfico: projetado no futuro
 plot(ens_future_guara, zlim = c(0, 1), col = pal1,
@@ -443,7 +443,7 @@ plot(ens_future_guara, zlim = c(0, 1), col = pal1,
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-# Calculando a perda de adequabilidade atual x futuro
+# Calculando a ganho e perda de adequabilidade atual x futuro
 
 # Raster atual
 n_atual_0.9_1.0 <- cellStats(
@@ -498,24 +498,6 @@ n_futuro_0.5_0.7
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
-
-# Raster atual
-n_atual_0.5_0.7 <- cellStats(
-  ens_multi_guara > 0.5 & ens_multi_guara <= 0.7,
-  stat = 'sum'
-)
-
-# Raster futuro
-n_futuro_0.5_0.7 <- cellStats(
-  ens_future_guara > 0.5 & ens_future_guara <= 0.7,
-  stat = 'sum'
-)
-
-n_atual_0.5_0.7
-n_futuro_0.5_0.7
-
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
 # resolução em graus
 res_minuto_arco <- 5
 
@@ -539,8 +521,8 @@ area_perda_km2_0.9_1.0
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-#perda_percentual_0.9_1.0 <- area_perda_km2_0.9_1.0 / area_atual_km2_0.9_1.0 * 100
-#perda_percentual_0.9_1.0
+perda_percentual_0.9_1.0 <- area_perda_km2_0.9_1.0 / area_atual_km2_0.9_1.0 * 100
+perda_percentual_0.9_1.0
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
@@ -683,7 +665,7 @@ p3 <- ggplot(df_plot_km2_0.5_0.7, aes(x = Cenário, y = Area_km2, fill = Cenári
   theme_minimal(base_size = 16) +
   theme(
     legend.position = "none",
-    plot.title = element_text(size = 20, face = "bold"),
+    plot.title = element_text(size = 16, face = "bold"),
     plot.subtitle = element_text(size = 16),
     axis.title.y = element_text(size = 16),
     axis.text.x = element_text(size = 14),
@@ -696,6 +678,6 @@ p3
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-#library(patchwork)
+library(patchwork)
 
 p1 + p2 + p3
