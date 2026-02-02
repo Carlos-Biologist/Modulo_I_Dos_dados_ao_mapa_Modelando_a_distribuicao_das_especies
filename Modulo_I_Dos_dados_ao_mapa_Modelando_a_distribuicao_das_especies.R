@@ -481,6 +481,41 @@ n_futuro_0.7_0.9
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
+# Raster atual
+n_atual_0.5_0.7 <- cellStats(
+  ens_multi_guara > 0.5 & ens_multi_guara <= 0.7,
+  stat = 'sum'
+)
+
+# Raster futuro
+n_futuro_0.5_0.7 <- cellStats(
+  ens_future_guara > 0.5 & ens_future_guara <= 0.7,
+  stat = 'sum'
+)
+
+n_atual_0.5_0.7
+n_futuro_0.5_0.7
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+# Raster atual
+n_atual_0.5_0.7 <- cellStats(
+  ens_multi_guara > 0.5 & ens_multi_guara <= 0.7,
+  stat = 'sum'
+)
+
+# Raster futuro
+n_futuro_0.5_0.7 <- cellStats(
+  ens_future_guara > 0.5 & ens_future_guara <= 0.7,
+  stat = 'sum'
+)
+
+n_atual_0.5_0.7
+n_futuro_0.5_0.7
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
 # resolução em graus
 res_minuto_arco <- 5
 
@@ -495,7 +530,7 @@ pixel_km2
 
 area_atual_km2_0.9_1.0  <- n_atual_0.9_1.0  * pixel_km2
 area_futuro_km2_0.9_1.0 <- n_futuro_0.9_1.0 * pixel_km2
-area_perda_km2_0.9_1.0  <- area_atual_km2_0.9_1.0 - area_futuro_km2_0.9_1.0
+area_perda_km2_0.9_1.0  <- -(area_atual_km2_0.9_1.0 - area_futuro_km2_0.9_1.0)
 
 area_atual_km2_0.9_1.0
 area_futuro_km2_0.9_1.0
@@ -551,7 +586,7 @@ p1
 
 area_atual_km2_0.7_0.9  <- n_atual_0.7_0.9  * pixel_km2
 area_futuro_km2_0.7_0.9 <- n_futuro_0.7_0.9 * pixel_km2
-area_perda_km2_0.7_0.9  <- area_atual_km2_0.7_0.9 - area_futuro_km2_0.7_0.9
+area_perda_km2_0.7_0.9  <- -(area_atual_km2_0.7_0.9 - area_futuro_km2_0.7_0.9)
 
 area_atual_km2_0.7_0.9
 area_futuro_km2_0.7_0.9
@@ -605,6 +640,62 @@ p2
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
+area_atual_km2_0.5_0.7  <- n_atual_0.5_0.7  * pixel_km2
+area_futuro_km2_0.5_0.7 <- n_futuro_0.5_0.7 * pixel_km2
+area_perda_km2_0.5_0.7  <- -(area_atual_km2_0.5_0.7 - area_futuro_km2_0.5_0.7)
+
+area_atual_km2_0.5_0.7
+area_futuro_km2_0.5_0.7
+area_perda_km2_0.5_0.7
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+perda_percentual_0.5_0.7 <- area_perda_km2_0.5_0.7 / area_atual_km2_0.5_0.7 * 100
+perda_percentual_0.5_0.7
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+df_plot_km2_0.5_0.7 <- data.frame(
+  Cenário = factor(c("Presente", "Futuro"),
+                   levels = c("Presente", "Futuro")),
+  Area_km2 = c(area_atual_km2_0.5_0.7, area_futuro_km2_0.5_0.7)
+)
+
+
+p3 <- ggplot(df_plot_km2_0.5_0.7, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = format(round(Area_km2, 0), big.mark = ".", scientific = FALSE)),
+    vjust = -0.5,
+    size = 6
+  ) +
+  scale_fill_manual(values = c("blue", "red")) +
+  labs(
+    title = "Ganho de áreas adequadas (0.5–0.7)",
+    subtitle = paste0(
+      "Aumento de ", round(perda_percentual_0.5_0.7, 1), "% no cenário futuro"
+    ),
+    y = expression("Área (km"^2*")"),
+    x = NULL
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 20, face = "bold"),
+    plot.subtitle = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14)
+  ) +
+  ylim(0, max(df_plot_km2_0.5_0.7$Area_km2) * 1.25)
+
+p3
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
 #library(patchwork)
 
-#p1 + p2
+p1 + p2 + p3
