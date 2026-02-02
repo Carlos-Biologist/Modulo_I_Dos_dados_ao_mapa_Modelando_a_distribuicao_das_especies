@@ -195,7 +195,7 @@ g1_guara + g2_guara
 ## Download ou carregamento das variáveis ambientais -----
 bio_guara <- geodata::worldclim_global(
   var = "bio",     # Variáveis bioclimáticas (BIO1 a BIO19)
-  res = 5,         # Resolução espacial (5 minutos de arco)
+    res = 5,         # Resolução espacial (5 minutos de arco)
   path = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies" # Onde salvar
 )
 
@@ -379,7 +379,7 @@ bio_future_guara <- geodata::cmip6_world(     # Baixa e prepara variáveis clim�
   ssp   = "585",                              # Cenário de emissões SSP5-8.5 (altas emissões)
   time  = "2081-2100",                        # Período futuro considerado (final do século XXI)
   var   = "bioc",                             # Variáveis bioclimáticas (BIO1–BIO19)
-  res   = 5,                                  # Resolução espacial (~5 km)
+  res   = 5,                                  # Resolução espacial (5 minutos de arco)
   path  = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara"
   # Diretório onde os arquivos serão salvos
 )
@@ -482,11 +482,11 @@ n_futuro_0.7_0.9
 # ---------------------------------------------------------------------------- #
 
 # resolução em graus
-res_grau <- 0.05
+res_minuto_arco <- 5
 
 # conversão grau -> km
-km_por_grau <- 111
-pixel_km2 <- (res_grau * km_por_grau)^2
+km_por_minuto_arco <- 1.855
+pixel_km2 <- (res_minuto_arco * km_por_minuto_arco)^2
 
 pixel_km2
 
@@ -504,8 +504,47 @@ area_perda_km2_0.9_1.0
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-perda_percentual_0.9_1.0 <- area_perda_km2_0.9_1.0 / area_atual_km2_0.9_1.0 * 100
-perda_percentual_0.9_1.0
+#perda_percentual_0.9_1.0 <- area_perda_km2_0.9_1.0 / area_atual_km2_0.9_1.0 * 100
+#perda_percentual_0.9_1.0
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+df_plot_km2_0.9_1.0 <- data.frame(
+  Cenário = factor(c("Presente", "Futuro"),
+                   levels = c("Presente", "Futuro")),
+  Area_km2 = c(area_atual_km2_0.9_1.0, area_futuro_km2_0.9_1.0)
+)
+
+
+p1 <- ggplot(df_plot_km2_0.9_1.0, aes(x = Cenário, y = Area_km2, fill = Cenário)) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = format(round(Area_km2, 0), big.mark = ".", scientific = FALSE)),
+    vjust = -0.5,
+    size = 6
+  ) +
+  scale_fill_manual(values = c("blue", "red")) +
+  labs(
+    title = "Perda de áreas adequadas (0.9–1.0)",
+    subtitle = paste0(
+      "Redução de ", round(perda_percentual_0.9_1.0, 1), "% no cenário futuro"
+    ),
+    y = expression("Área (km"^2*")"),
+    x = NULL
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 20, face = "bold"),
+    plot.subtitle = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14)
+  ) +
+  ylim(0, max(df_plot_km2_0.9_1.0$Area_km2) * 1.25)
+
+p1
 
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
@@ -563,4 +602,9 @@ p2 <- ggplot(df_plot_km2_0.7_0.9, aes(x = Cenário, y = Area_km2, fill = Cenári
 
 p2
 
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
 
+#library(patchwork)
+
+#p1 + p2
