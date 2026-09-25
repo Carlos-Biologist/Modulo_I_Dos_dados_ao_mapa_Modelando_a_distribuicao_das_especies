@@ -3,7 +3,7 @@
 # das espécies                                                                 #
 #                                                                              #
 # Criado por: Dr. Carlos de Oliveira                                           #
-# Data: 01-02-2026                                                             #
+# Data: 26-09-2026                                                             #
 # Contato: carlos.prof.bio@gmail.com                                           #
 #                                                                              #
 # Descrição: o script representa o processo geral de implementação de          #
@@ -76,7 +76,7 @@ nrow(sp_guara)     # Conta o número de linhas (registros) no dataframe
 
 ### Tratamento dos dados -----
 sp_guara_al <- sp_guara %>%
-  dplyr::filter(country %in% c("Brazil", "Argentina", "Paraguay", "Bolivia", "Uruguay")) %>%  # Mantém ocorrências nos países escolhidos
+  dplyr::filter(country %in% c("Brazil", "Argentina", "Paraguay", "Bolivia", "Uruguay", "Peru")) %>%  # Mantém ocorrências nos países escolhidos
   dplyr::select(species, lon, lat)                         # Mantém apenas colunas de interesse
 
 nrow(sp_guara_al)  # Número de registros após o filtro
@@ -95,7 +95,7 @@ nrow(sp_guara_al)      # Conta registros após limpeza
 library(ggplot2)  # Pacote para gráficos
 library(maps)     # Pacote para mapas simples
 
-#br_map <- map_data("world", region = "Brazil")  # Obtém coordenadas do mapa do Brasil
+#br_map <- map_data("world", region = "Brazil")  # Obtém coordenadas do mapa do Brasil - DATUM - SIRGAS2000
 
 #ggplot() +
 #  geom_polygon(data = br_map, aes(x = long, y = lat, group = group),
@@ -137,9 +137,26 @@ g1_guara
 
 # ---------------------------------------------------------------------------- #
 
+library(openxlsx)
+
+### Salvar em arquivo Excel -----
+write.xlsx(
+  sp_guara_al,
+  file = "sp_guara_al_2.xlsx",
+  overwrite = TRUE
+)
+
+# ---------------------------------------------------------------------------- #
+
 # Remove o ponto indesejados
 sp_guara_al <- sp_guara_al %>%
-  filter(!(lon == -46.7837246 & lat == -30.5171954))
+  filter(!(lon == -46.7837247 & lat == -30.5171955))
+
+#sp_guara_al <- sp_guara_al %>%
+#  filter(!(lon == 5.53 & lat == -8.23))
+
+# Remove pontos indesejados
+#sp_guara_al <- sp_guara_al[-c(180), ]
 
 # ---------------------------------------------------------------------------- #
 
@@ -149,7 +166,7 @@ sp_thin_guara <- thin(
   lat.col = "lat",                              # Coluna com latitude
   long.col = "lon",                             # Coluna com longitude
   spec.col = "species",                         # Coluna com o nome da espécie
-  thin.par = 100,                               # Distância mínima (km) entre pontos
+  thin.par = 40,                               # Distância mínima (km) entre pontos
   reps = 100,                                   # Quantas vezes repetir o processo
   locs.thinned.list.return = TRUE,              # Retorna lista com resultados de cada repetição
   write.files = FALSE,                          # Não salva arquivos automaticamente
@@ -187,16 +204,11 @@ g1_guara + g2_guara
 
 # ---------------------------------------------------------------------------- #
 
-### Exportar planilha final -----
-#write.csv(sp_thin_guara, "Chrysocyon brachyurus.csv", row.names = FALSE) # Salva CSV no diretório atual
-
-# ---------------------------------------------------------------------------- #
-
 ## Download ou carregamento das variáveis ambientais -----
 bio_guara <- geodata::worldclim_global(
   var = "bio",       # Variáveis bioclimáticas (BIO1 a BIO19)
-    res = 5,         # Resolução espacial (5 minutos de arco)
-  path = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies" # Onde salvar
+  res = 5,         # Resolução espacial (5 minutos de arco)
+  path = "C:/Backup_2/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies" # Onde salvar
 )
 
 #https://www.worldclim.org/data/bioclim.html
@@ -205,7 +217,7 @@ bio_guara <- geodata::worldclim_global(
 
 bio_guara <- raster::stack(
   list.files(
-    path = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/climate/wc2.1_5m",
+    path = "C:/Backup_2/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/climate/wc2.1_5m",
     pattern = ".tif", full.names = TRUE
   )
 )
@@ -241,6 +253,8 @@ par(mfrow = c(1, 1))
 
 # Visualizar a geometria
 plot(st_geometry(latam_guara))
+
+class(bio_guara)
 
 # Reprojeta as variáveis ambientais para o mesmo CRS do shapefile
 bio_guara <- projectRaster(bio_guara, crs = crs(latam_guara))
@@ -280,10 +294,10 @@ sp_thin_guara <- sp_thin_guara %>% mutate(guara = 1)                 # Adiciona 
 coordinates(sp_thin_guara) <- c("longitude", "latitude")             # Converte para objeto espacial
 
 # Cria um SpatialPointsDataFrame
-sp_thin_guara <- SpatialPointsDataFrame(sp_thin_guara, 
-                                        data = data.frame(guara = rep(1, nrow(sp_thin_guara))))
+#sp_thin_guara <- SpatialPointsDataFrame(sp_thin_guara, 
+#                                        data = data.frame(guara = rep(1, nrow(sp_thin_guara))))
 
-sp_thin_guara
+#sp_thin_guara
 
 # ---------------------------------------------------------------------------- #
 
@@ -304,7 +318,7 @@ mdata_guara <- sdmData(
   train = sp_thin_guara,     # Dados de ocorrência mais coordenadas
   predictors = bio_guara,    # Camadas ambientais
   bg = list(
-    n = 134,                 # Número de pontos de background (pseudo ausência)
+    n = 116,                 # Número de pontos de background (pseudo ausência)
     method = "gRandom",      # Distribuição aleatória
     remove = TRUE            # Remove pontos de fundo sobrepostos a presenças
   )
@@ -340,7 +354,7 @@ rcurve(modelo_multi_guara, gg = TRUE)
 proj_multi_guara <- raster::predict(
   bio_guara,
   modelo_multi_guara,           # Modelo treinado
-  filename = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/proj_guara_multi.grd",
+  filename = "C:/Backup_2/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/proj_guara_multi.grd",
   overwrite = TRUE  # Sobrescreve se existir
 )
 
@@ -372,7 +386,7 @@ plot(ens_multi_guara, zlim = c(0, 1), col=pal1)
 
 # ---------------------------------------------------------------------------- #
 
-dir.create("C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara", recursive = TRUE)
+dir.create("C:/Backup_2/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara", recursive = TRUE)
 
 bio_future_guara <- geodata::cmip6_world(     # Baixa e prepara variáveis climáticas globais do CMIP6
   model = "MPI-ESM1-2-HR",                    # Modelo climático global (GCM) utilizado
@@ -380,7 +394,7 @@ bio_future_guara <- geodata::cmip6_world(     # Baixa e prepara variáveis clim�
   time  = "2081-2100",                        # Período futuro considerado (final do século XXI)
   var   = "bioc",                             # Variáveis bioclimáticas (BIO1–BIO19)
   res   = 5,                                  # Resolução espacial (5 minutos de arco)
-  path  = "C:/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara"
+  path  = "C:/Backup_2/Cursos/Modelagem/Vídeo-aula/Modulo_I_Dos_dados_ao_mapa_Modelando_a_distribuicao_das_especies/variaveis_fut_guara"
   # Diretório onde os arquivos serão salvos
 )
 
@@ -389,9 +403,9 @@ bio_future_guara <- geodata::cmip6_world(     # Baixa e prepara variáveis clim�
 # 1. Reprojetar e recortar bio_future para América Latina
 
 bio_future_guara <- raster::stack(bio_future_guara)
-bio_future_guara <- raster::projectRaster(bio_future_guara, crs = crs(latam_guara))
+#bio_future_guara <- raster::projectRaster(bio_future_guara, crs = crs(latam_guara))
 bio_future_guara <- crop(bio_future_guara, latam_guara)
-bio_future_guara <- mask(bio_future_guara, latam_guara)
+#bio_future_guara <- mask(bio_future_guara, latam_guara)
 
 # ---------------------------------------------------------------------------- #
 
@@ -447,7 +461,7 @@ plot(ens_future_guara, zlim = c(0, 1), col = pal1,
 
 # Raster atual
 n_atual_0.9_1.0 <- cellStats(
-  ens_multi_guara >= 0.9 & ens_future_guara <= 1.0,
+  ens_multi_guara >= 0.9 & ens_multi_guara <= 1.0,
   stat = 'sum'
 )
 
