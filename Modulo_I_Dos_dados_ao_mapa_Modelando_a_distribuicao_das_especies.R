@@ -310,7 +310,7 @@ mdata_guara <- sdmData(
   train = sp_thin_guara,     # Dados de ocorrência mais coordenadas
   predictors = bio_guara,    # Camadas ambientais
   bg = list(
-    n = 332,                 # Número de pontos de background (pseudo ausência)
+    n = 153,                 # Número de pontos de background (pseudo ausência)
     method = "gRandom",      # Distribuição aleatória
     remove = TRUE            # Remove pontos de fundo sobrepostos a presenças
   )
@@ -688,4 +688,4 @@ p3
 
 library(patchwork)
 
-p1 + p2 + p3
+p2 + p3
