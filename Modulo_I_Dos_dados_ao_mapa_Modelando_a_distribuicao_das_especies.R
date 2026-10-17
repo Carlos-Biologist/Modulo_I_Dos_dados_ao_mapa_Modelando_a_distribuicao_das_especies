@@ -318,7 +318,7 @@ mdata_guara <- sdmData(
   train = sp_thin_guara,     # Dados de ocorrência mais coordenadas
   predictors = bio_guara,    # Camadas ambientais
   bg = list(
-    n = 116,                 # Número de pontos de background (pseudo ausência)
+    n = 332,                 # Número de pontos de background (pseudo ausência)
     method = "gRandom",      # Distribuição aleatória
     remove = TRUE            # Remove pontos de fundo sobrepostos a presenças
   )
@@ -346,7 +346,9 @@ roc(modelo_multi_guara)         # Calcula curva ROC/AUC
 getVarImp(modelo_multi_guara)   # Importância das variáveis
 
 # Curvas de resposta para duas variáveis específicas
-rcurve(modelo_multi_guara, gg = TRUE)
+#rcurve <- rcurve(modelo_multi_guara, gg = TRUE)
+
+rcurve
 
 # ---------------------------------------------------------------------------- #
 
