@@ -166,7 +166,7 @@ sp_thin_guara <- thin(
   lat.col = "lat",                              # Coluna com latitude
   long.col = "lon",                             # Coluna com longitude
   spec.col = "species",                         # Coluna com o nome da espécie
-  thin.par = 40,                               # Distância mínima (km) entre pontos
+  thin.par = 100,                               # Distância mínima (km) entre pontos
   reps = 100,                                   # Quantas vezes repetir o processo
   locs.thinned.list.return = TRUE,              # Retorna lista com resultados de cada repetição
   write.files = FALSE,                          # Não salva arquivos automaticamente
@@ -254,10 +254,8 @@ par(mfrow = c(1, 1))
 # Visualizar a geometria
 plot(st_geometry(latam_guara))
 
-class(bio_guara)
-
 # Reprojeta as variáveis ambientais para o mesmo CRS do shapefile
-bio_guara <- projectRaster(bio_guara, crs = crs(latam_guara))
+#bio_guara <- projectRaster(bio_guara, crs = crs(latam_guara))
 
 # Recorta e aplica máscara para a América Latina
 bio_guara <- crop(bio_guara, latam_guara)
@@ -292,12 +290,6 @@ anyNA(bio_guara)                      # Verificar se existem NAs no RasterStack
 # Ajustar e treinar modelos de adequabilidade -----
 sp_thin_guara <- sp_thin_guara %>% mutate(guara = 1)                 # Adiciona coluna binária de presença
 coordinates(sp_thin_guara) <- c("longitude", "latitude")             # Converte para objeto espacial
-
-# Cria um SpatialPointsDataFrame
-#sp_thin_guara <- SpatialPointsDataFrame(sp_thin_guara, 
-#                                        data = data.frame(guara = rep(1, nrow(sp_thin_guara))))
-
-#sp_thin_guara
 
 # ---------------------------------------------------------------------------- #
 
